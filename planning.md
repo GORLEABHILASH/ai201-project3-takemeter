@@ -33,16 +33,18 @@ List every class the model can predict. You should have at least 2.
 
 ## 3. Dataset
 
-**Source:** _Where do the examples come from (hand-written, scraped, public dataset, etc.)?_
+**Source:** Public **r/Cricket** comments, collected **manually** (copy-paste) from 3–5 threads.
+No API/scraper, no authenticated content — per assignment rules. _(List the exact threads here.)_
 
-**Size:** _How many labeled rows total? Train/test split?_
+**Size:** _How many labeled rows total (≥ 200)? Train/test split?_
 
 **Schema of `data/dataset.csv`:**
 
 | Column | Type | Description |
 |---|---|---|
-| `text` | str | The input to classify |
+| `text` | str | The comment to classify |
 | `label` | str | Ground-truth label (one of the labels above) |
+| `source_url` | str | Permalink of the thread the comment came from (provenance) |
 
 **How was it labeled?** _Who/what assigned the ground-truth labels, and how do you trust them?_
 

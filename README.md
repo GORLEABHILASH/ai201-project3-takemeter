@@ -12,20 +12,17 @@ The notebook itself (training/evaluation code) runs in Google Colab. After each 
 ai201-project3-takemeter/
 ├── planning.md            # Project spec: problem, labels, dataset plan, eval plan
 ├── README.md              # You are here
-├── collect.py             # Pulls r/Cricket comments into data/dataset.csv (PRAW)
-├── requirements.txt       # praw, python-dotenv
-├── .env.example           # Template for Reddit API credentials
 ├── data/
-│   └── dataset.csv        # Labeled dataset (input to the notebook)
+│   └── dataset.csv        # Labeled dataset, collected by hand (input to the notebook)
 └── results/               # Artifacts downloaded from Colab after each run
     ├── evaluation_results.json
     └── confusion_matrix.png
 ```
 
 The community is **r/Cricket**, and the unit of classification is a **comment** (not a
-post) — that's where the quality variation lives. `collect.py` pulls comments from the
-threads listed in its `THREADS` array; edit that list to add a match thread and a
-discussion thread alongside the anchor post so the labels stay balanced.
+post) — that's where the quality variation lives. Data is collected **manually** (copy-paste
+of public comments) — no API or scraper, per the assignment, which keeps you close to the
+text while you read it.
 
 > The Colab notebook is **not** stored here — keep it in Google Drive / Colab and link it below.
 
@@ -46,17 +43,24 @@ discussion thread alongside the anchor post so the labels stay balanced.
 
 ## Workflow
 
-1. **Collect:** create a Reddit script app, copy `.env.example` → `.env`, add thread URLs to
-   `THREADS` in [`collect.py`](collect.py), then:
-   ```bash
-   pip install -r requirements.txt
-   python collect.py        # writes ~200+ comments to data/dataset.csv (label column blank)
-   ```
-2. **Read 30–40 first**, then finalize your label set in [`planning.md`](planning.md).
-3. **Label:** fill in the `label` column of [`data/dataset.csv`](data/dataset.csv) and commit it.
+1. **Collect (manual, ~1–2 hrs):** open 3–5 public r/Cricket threads and copy comments into a
+   spreadsheet — one comment per row. Pull from a mix so the labels stay balanced:
+   - the anchor milestone thread (Root's 14,000 — reaction + GOAT-debate takes)
+   - a recent **match / post-match thread** (emotional reactions, selection/umpiring gripes)
+   - a **discussion / debate thread** (reasoned arguments, analysis)
+
+   Skip deleted/`[removed]` comments, AutoMod, and one-word replies. **Read as you copy** —
+   this is the 30–40-comment read that tells you what your labels should be.
+2. **Define labels:** once you've seen the spread, finalize the label set in [`planning.md`](planning.md).
+3. **Label + export:** fill the `label` column and export to [`data/dataset.csv`](data/dataset.csv)
+   (columns: `text`, `label`, `source_url`), then commit it.
 4. Open the notebook in Colab, upload `dataset.csv`, run training + evaluation.
 5. Download `evaluation_results.json` and `confusion_matrix.png` from Colab into [`results/`](results/).
 6. Commit the updated artifacts so the repo shows the current results.
+
+> **Collection rules (from the assignment):** public posts only — no private channels or
+> authenticated content. Manual copy-paste (or a scraper if you're comfortable), but don't let
+> collection become a coding project.
 
 ---
 
