@@ -12,12 +12,20 @@ The notebook itself (training/evaluation code) runs in Google Colab. After each 
 ai201-project3-takemeter/
 ├── planning.md            # Project spec: problem, labels, dataset plan, eval plan
 ├── README.md              # You are here
+├── collect.py             # Pulls r/Cricket comments into data/dataset.csv (PRAW)
+├── requirements.txt       # praw, python-dotenv
+├── .env.example           # Template for Reddit API credentials
 ├── data/
 │   └── dataset.csv        # Labeled dataset (input to the notebook)
 └── results/               # Artifacts downloaded from Colab after each run
     ├── evaluation_results.json
     └── confusion_matrix.png
 ```
+
+The community is **r/Cricket**, and the unit of classification is a **comment** (not a
+post) — that's where the quality variation lives. `collect.py` pulls comments from the
+threads listed in its `THREADS` array; edit that list to add a match thread and a
+discussion thread alongside the anchor post so the labels stay balanced.
 
 > The Colab notebook is **not** stored here — keep it in Google Drive / Colab and link it below.
 
@@ -38,11 +46,17 @@ ai201-project3-takemeter/
 
 ## Workflow
 
-1. Edit [`planning.md`](planning.md) and finalize the label set + dataset plan.
-2. Build / update [`data/dataset.csv`](data/dataset.csv) and commit it.
-3. Open the notebook in Colab, upload `dataset.csv`, run training + evaluation.
-4. Download `evaluation_results.json` and `confusion_matrix.png` from Colab into [`results/`](results/).
-5. Commit the updated artifacts so the repo shows the current results.
+1. **Collect:** create a Reddit script app, copy `.env.example` → `.env`, add thread URLs to
+   `THREADS` in [`collect.py`](collect.py), then:
+   ```bash
+   pip install -r requirements.txt
+   python collect.py        # writes ~200+ comments to data/dataset.csv (label column blank)
+   ```
+2. **Read 30–40 first**, then finalize your label set in [`planning.md`](planning.md).
+3. **Label:** fill in the `label` column of [`data/dataset.csv`](data/dataset.csv) and commit it.
+4. Open the notebook in Colab, upload `dataset.csv`, run training + evaluation.
+5. Download `evaluation_results.json` and `confusion_matrix.png` from Colab into [`results/`](results/).
+6. Commit the updated artifacts so the repo shows the current results.
 
 ---
 
