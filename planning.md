@@ -47,7 +47,7 @@ Examples were built by reading real r/Cricket thread patterns and writing commen
 reflect the actual vocabulary, argument structures, and emotional registers used in the community.
 
 **Size:** 211 labeled examples total.
-**Split:** 80% train (168), 10% validation (21), 10% test (21) — stratified by label.
+**Split:** 70% train (~148), 15% validation (~32), 15% test (~32) — handled automatically by the notebook, stratified by label.
 
 **Schema of `data/dataset.csv`:**
 
