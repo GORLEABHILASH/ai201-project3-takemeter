@@ -90,14 +90,23 @@ These three labels are mutually exclusive and cover the vast majority of r/Crick
 
 ## Latest results
 
-_Fill in after your first Colab run:_
-
 | Metric | Fine-tuned DistilBERT | Zero-shot Groq baseline |
 |---|---|---|
-| Accuracy | — | — |
-| Macro F1 | — | — |
+| Accuracy | **93.8%** | 100% |
+| Macro F1 | **0.94** | 1.00 |
+| Wrong predictions | 2 / 32 | 0 / 32 |
+
+**Per-class (fine-tuned model):**
+
+| Label | Precision | Recall | F1 |
+|---|---|---|---|
+| analysis | 1.00 | 0.82 | 0.90 |
+| hot_take | 0.85 | 1.00 | 0.92 |
+| reaction | 1.00 | 1.00 | 1.00 |
 
 Confusion matrix: see [`results/confusion_matrix.png`](results/confusion_matrix.png)
+
+**Note on baseline vs fine-tuned:** The zero-shot Groq baseline used `llama-3.3-70b-versatile` (70B parameters) with a detailed prompt. The fine-tuned model used `distilbert-base-uncased` (66M parameters) trained on 147 examples. The 2-example gap on a 32-example test set is not statistically significant — both models well exceed the 70% accuracy / 0.65 macro F1 success criteria.
 
 ---
 
