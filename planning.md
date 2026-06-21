@@ -46,7 +46,7 @@ By design: 70 examples per label, balanced at ~33% each. Total: 210 examples.
 Examples were built by reading real r/Cricket thread patterns and writing comments that
 reflect the actual vocabulary, argument structures, and emotional registers used in the community.
 
-**Size:** 210 labeled examples total.
+**Size:** 211 labeled examples total.
 **Split:** 80% train (168), 10% validation (21), 10% test (21) — stratified by label.
 
 **Schema of `data/dataset.csv`:**
@@ -64,7 +64,7 @@ distinction is operationally clear: `analysis` requires specific verifiable evid
 
 **Label distribution:**
 - `analysis`: 70 examples
-- `hot_take`: 70 examples
+- `hot_take`: 71 examples
 - `reaction`: 70 examples
 
 ---
@@ -139,8 +139,9 @@ Raw comment text → one of {`analysis`, `hot_take`, `reaction`} plus confidence
 
 **What counts as success?**
 - Fine-tuned model accuracy ≥ 70% on the test set (random chance = 33%)
-- Fine-tuned model macro F1 > zero-shot baseline macro F1 (fine-tuning must add value)
+- Fine-tuned model macro F1 ≥ 0.65
 - No single class with F1 < 0.50
+- Fine-tuned model macro F1 > zero-shot Groq baseline macro F1 (fine-tuning must add measurable value)
 
 ---
 
@@ -171,7 +172,35 @@ Raw comment text → one of {`analysis`, `hot_take`, `reaction`} plus confidence
 
 ---
 
-## 8. Stretch goals (optional)
+## 8. AI Tool Plan
+
+**Label stress-testing: YES**
+Before annotating, use Claude to generate 10 boundary-case comments that sit exactly between
+`hot_take` and `analysis` (a stat present but used rhetorically) and between `hot_take` and
+`reaction` (strong emotional opinion during a live match). If any generated comment cannot be
+cleanly classified, tighten the decision rule before labeling more examples.
+
+Prompt to use:
+> "Generate 5 cricket comments that sit exactly on the boundary between analysis and hot_take —
+> where a stat is present but used as decoration rather than as the core argument. Then generate
+> 5 that sit between hot_take and reaction — strong opinion statements during a live match."
+
+**Annotation assistance: NO**
+All labels were assigned by the author manually without LLM pre-labeling. This ensures the
+ground-truth labels reflect human judgment, not an AI's interpretation of the definitions.
+
+**Failure analysis: YES**
+After training, paste the full list of wrong predictions into Claude with this prompt:
+> "Here are comments the model got wrong. Each shows the actual label and the predicted label.
+> Identify any systematic pattern — is there a type of comment the model consistently
+> misclassifies? Be specific about the linguistic or structural feature causing the error."
+
+Verify the pattern yourself: check that at least 3 of the identified wrong predictions actually
+fit the pattern before including it in the evaluation report.
+
+---
+
+## 9. Stretch goals (optional)
 
 - [ ] **Error pattern analysis:** Identify systematic patterns in wrong predictions beyond
   listing individual errors (e.g., "model consistently misclassifies posts with one stat as analysis").
