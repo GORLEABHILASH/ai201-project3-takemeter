@@ -54,7 +54,7 @@ These three labels are mutually exclusive and cover the vast majority of r/Crick
 | `hot_take` | 71 | 33.6% |
 | `reaction` | 70 | 33.2% |
 
-**Train/val/test split:** 80% / 10% / 10% — stratified by label (handled in the notebook)
+**Train/val/test split:** 70% / 15% / 15% — stratified by label, handled automatically by the notebook
 
 **Labeling process:** Each comment was assigned a label according to the definitions above. The key decision rule for the hardest boundary (analysis vs. hot_take when a stat is present): if the statistic is the central argument — you'd lose the claim without it — label `analysis`. If the stat is decorative, appended to what is fundamentally an opinion, label `hot_take`.
 
@@ -107,6 +107,69 @@ These three labels are mutually exclusive and cover the vast majority of r/Crick
 Confusion matrix: see [`results/confusion_matrix.png`](results/confusion_matrix.png)
 
 **Note on baseline vs fine-tuned:** The zero-shot Groq baseline used `llama-3.3-70b-versatile` (70B parameters) with a detailed prompt. The fine-tuned model used `distilbert-base-uncased` (66M parameters) trained on 147 examples. The 2-example gap on a 32-example test set is not statistically significant — both models well exceed the 70% accuracy / 0.65 macro F1 success criteria.
+
+**Confusion matrix (fine-tuned model):**
+
+|  | Predicted: analysis | Predicted: hot_take | Predicted: reaction |
+|---|---|---|---|
+| **True: analysis** | 9 | 2 | 0 |
+| **True: hot_take** | 0 | 11 | 0 |
+| **True: reaction** | 0 | 0 | 10 |
+
+The only errors are in the `analysis` → `hot_take` cell (2 examples). `hot_take` and `reaction` are classified perfectly.
+
+---
+
+## Evaluation report
+
+### Wrong predictions analysis
+
+**Error 1 — fine-tuned model**
+> "New Zealand average 5.6 batting positions used in the first 10 wickets across a series, highest of any Test team. Their batting flexibility is measurable, not just a coaching talking point."
+
+True label: `analysis` | Predicted: `hot_take` | Confidence: 0.35
+
+The comment contains a specific statistic (5.6 positions) and a conclusion that depends on it. The model predicted `hot_take`, likely because the phrase "not just a coaching talking point" reads as dismissive opinion. The low confidence (0.35) shows the model was genuinely uncertain. **Root cause:** comparative phrasing that sounds like an assertion even when grounded in data.
+
+---
+
+**Error 2 — fine-tuned model**
+> "Third-umpire DRS success rates in Australia have been 71% since 2019, compared to the global average of 63%. The newest Hawkeye technology installed in 2018 may be a contributing factor."
+
+True label: `analysis` | Predicted: `hot_take` | Confidence: 0.34
+
+Two specific statistics with a direct comparison — textbook `analysis`. The model predicted `hot_take`, likely because "may be a contributing factor" is hedged rather than assertive. **Root cause:** the model learned that confident claims signal `analysis`, and tentative language signals `hot_take`. When an analysis comment hedges its conclusion, the model misreads the uncertainty as opinion.
+
+---
+
+**Error 3 — near-miss (Groq baseline, correctly classified)**
+> "Kohli's century drought from 2020 to 2022 proves he needed that break. He came back refreshed and immediately started scoring. Mental health in cricket is real."
+
+True label: `hot_take` | Groq predicted: `hot_take` ✓
+
+This is the hardest example in the dataset. It has causal reasoning, a time span, and confident framing — all surface signals of `analysis`. The Groq baseline correctly identified it as `hot_take` because there are zero verifiable statistics and the causal chain ("drought → break → refreshed → scoring") is asserted, not demonstrated. A weaker model would likely misclassify this as `analysis`.
+
+---
+
+**Shared pattern across errors 1 and 2:** Both fine-tuned errors are `analysis` comments where the conclusion is hedged or framed comparatively rather than stated directly. The model learned a surface heuristic — numbers = analysis, assertive tone = analysis — and breaks when the numbers are present but the tone is tentative. This is a training data gap, not a fundamental label design flaw.
+
+---
+
+### What the model learned vs. what we intended
+
+**What we intended:**
+> `analysis` = the argument structurally depends on verifiable evidence. Remove the stat, the claim collapses.
+
+**What the model actually learned:**
+> `analysis` = text containing numbers and percentages.
+> `hot_take` = text with strong opinion language or no numbers.
+> `reaction` = ALL CAPS, exclamation marks, present-tense emotional language.
+
+The model learned a surface-level proxy rather than the deeper semantic test. This is why it failed on hedged analysis — the numbers were present but the confident-assertion signal was absent, and confident assertion was the shortcut it learned for `analysis`.
+
+`reaction` was easiest because its linguistic markers (capitalisation, exclamation marks, live-match vocabulary) are visually distinctive and rarely appear in other labels. `hot_take` was second easiest for the same reason — superlatives and absolute language are strong signals. `analysis` was hardest because its defining feature (evidence-dependence) is semantic, not surface-level.
+
+**To improve:** Training examples should include more `analysis` comments with tentative language ("may suggest," "appears to correlate with") alongside `hot_takes` with a single cherry-picked stat. This would force the model to learn evidence-dependence rather than just tone.
 
 ---
 
