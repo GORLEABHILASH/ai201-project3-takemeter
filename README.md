@@ -4,7 +4,7 @@ TakeMeter is an AI-201 Project 3 classifier that measures discourse quality in *
 
 This repository holds everything outside the Colab notebook: the planning document, the labeled dataset, and the evaluation artifacts the notebook produces.
 
-**Colab notebook:** _(paste the shareable Colab link here after training)_
+**Colab notebook:** [TakeMeter Fine-Tuning Notebook](https://colab.research.google.com/drive/1Bjq1rE5skRoyfWa3lLEt83ZjZ_GKEv_X#scrollTo=d8bc603a)
 
 ---
 
