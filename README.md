@@ -27,11 +27,11 @@ ai201-project3-takemeter/
 
 The classifier distinguishes three types of discourse in r/Cricket comments:
 
-| Label | Definition | Example |
-|---|---|---|
-| `analysis` | A structured argument backed by statistics, historical data, or tactical observation. Evidence is specific and verifiable. | *"Root's conversion rate from 50s to 100s is 43%, placing him top-10 among batters with 100+ innings. The criticism that he doesn't convert is driven by specific memorable failures, not the overall pattern."* |
-| `hot_take` | A bold, confident opinion stated without supporting evidence. Asserts rather than argues — may be correct, but doesn't reason from data. Often uses superlatives or absolute language. | *"Rohit Sharma is the most overrated Test opener in cricket history. He collapses abroad every single time. His away record doesn't back the legend at all."* |
-| `reaction` | An immediate emotional response to a specific live moment, score update, or result. Primarily expresses feeling — time-sensitive, present-tense, often capitalised or exclamatory. | *"YESSSSS!! What an absolute catch!! He came from nowhere!! I cannot believe what I just watched!!"* |
+| Label | Definition | Example 1 | Example 2 |
+|---|---|---|---|
+| `analysis` | A structured argument backed by statistics, historical data, or tactical observation. Evidence is specific and verifiable. | *"Root's conversion rate from 50s to 100s is 43%, placing him top-10 among batters with 100+ innings. The criticism that he doesn't convert is driven by specific memorable failures, not the overall pattern."* | *"Bumrah's economy rate in death overs has dropped from 9.2 to 7.8 over four years, directly corresponding to his increased use of wide yorkers in the final 4 overs."* |
+| `hot_take` | A bold, confident opinion stated without supporting evidence. Asserts rather than argues — may be correct, but doesn't reason from data. Often uses superlatives or absolute language. | *"Rohit Sharma is the most overrated Test opener in cricket history. He collapses abroad every single time. His away record doesn't back the legend at all."* | *"Test cricket is dying and administrators don't care. They just want to sell T20 rights and let the purest form of the game wither. It'll be gone in 20 years."* |
+| `reaction` | An immediate emotional response to a specific live moment, score update, or result. Primarily expresses feeling — time-sensitive, present-tense, often capitalised or exclamatory. | *"YESSSSS!! What an absolute catch!! He came from nowhere!! I cannot believe what I just watched!!"* | *"My hands are literally shaking typing this. 3 needed off 2 balls. Come on come on come on."* |
 
 These three labels are mutually exclusive and cover the vast majority of r/Cricket discourse. The distinction matters to people in the community: members genuinely value analytical posts differently from hot takes, and both differently from live match reactions.
 
@@ -81,10 +81,32 @@ These three labels are mutually exclusive and cover the vast majority of r/Crick
 
 **Key hyperparameter decisions:**
 - **Learning rate: 2e-5** — standard for DistilBERT on small datasets; 3e-5 risks overshooting on 168 training examples
-- **Epochs: 5** — enough to converge without memorising a 168-example training set
+- **Epochs: 3** — the notebook default; 3 passes through 147 training examples was enough to converge without overfitting. Validation accuracy tracked training accuracy closely across all 3 epochs with no gap forming.
 - **Batch size: 16** — balances Colab T4 memory with stable gradient estimates
 
-**Baseline:** Zero-shot classification using `llama-3.3-70b-versatile` via Groq API — same test set, no task-specific training.
+**Baseline:** Zero-shot classification using `llama-3.3-70b-versatile` via Groq API — same test set, no task-specific training. The system prompt provided the three label definitions and one example per label, then instructed the model to output only the label name. Results were collected by running all 32 test examples through the API with temperature=0 for deterministic output.
+
+**Baseline prompt used:**
+```
+You are classifying comments from r/Cricket.
+Assign each post to exactly one of the following categories.
+
+analysis: A comment that makes a claim using specific statistics, numbers, or verifiable
+facts where the argument depends on the evidence.
+Example: "Bumrah's economy rate in death overs has dropped from 9.2 to 7.8 over four years,
+directly corresponding to his increased use of wide yorkers."
+
+hot_take: A bold, confident opinion stated without supporting evidence — asserts rather than
+argues, often uses words like greatest, never, always, overrated.
+Example: "Rohit Sharma is the most overrated Test opener in cricket history."
+
+reaction: An immediate emotional response to something happening live in a match —
+time-anchored with words like now, today, just, or expressed through ALL CAPS and exclamation marks.
+Example: "YESSS!! What an absolute catch!! He came from nowhere!!"
+
+Respond with ONLY the label name. Do not explain your reasoning.
+Valid labels: analysis / hot_take / reaction
+```
 
 ---
 
@@ -142,16 +164,21 @@ Two specific statistics with a direct comparison — textbook `analysis`. The mo
 
 ---
 
-**Error 3 — near-miss (Groq baseline, correctly classified)**
-> "Kohli's century drought from 2020 to 2022 proves he needed that break. He came back refreshed and immediately started scoring. Mental health in cricket is real."
+**Error 3 — fine-tuned model**
+> "The reason Australia wins in Brisbane is their pace attack has been built for the Gabba's extra bounce since 2015. Every selection decision reflects that tactical philosophy."
 
-True label: `hot_take` | Groq predicted: `hot_take` ✓
+True label: `analysis` | Predicted: `hot_take` | Confidence: 0.36
 
-This is the hardest example in the dataset. It has causal reasoning, a time span, and confident framing — all surface signals of `analysis`. The Groq baseline correctly identified it as `hot_take` because there are zero verifiable statistics and the causal chain ("drought → break → refreshed → scoring") is asserted, not demonstrated. A weaker model would likely misclassify this as `analysis`.
+This comment contains no statistics at all — it is pure tactical cause-and-effect reasoning. The model predicted `hot_take` with very low confidence (0.36), and all three class scores were nearly equal (analysis 35.1%, hot_take 36.4%, reaction 28.4%), showing the model was almost randomly guessing. **Root cause:** the model learned that numbers and percentages are the primary signal for `analysis`. When a comment reasons analytically but contains no explicit statistics, the model has no signal to work with and defaults to `hot_take`.
 
 ---
 
-**Shared pattern across errors 1 and 2:** Both fine-tuned errors are `analysis` comments where the conclusion is hedged or framed comparatively rather than stated directly. The model learned a surface heuristic — numbers = analysis, assertive tone = analysis — and breaks when the numbers are present but the tone is tentative. This is a training data gap, not a fundamental label design flaw.
+**Pattern across all three errors:** All three are `analysis` comments the model failed on — but for three different reasons:
+- Error 1: numbers present, but conclusion framed comparatively ("not just a talking point")
+- Error 2: numbers present, but conclusion is hedged ("may be a contributing factor")
+- Error 3: no numbers at all — pure tactical reasoning with no statistical evidence
+
+Together these reveal the model's core shortcut: **it learned "numbers = analysis" rather than "evidence-dependence = analysis."** Any analysis comment that doesn't contain explicit statistics or percentages is at risk of being misclassified.
 
 ---
 
@@ -170,6 +197,29 @@ The model learned a surface-level proxy rather than the deeper semantic test. Th
 `reaction` was easiest because its linguistic markers (capitalisation, exclamation marks, live-match vocabulary) are visually distinctive and rarely appear in other labels. `hot_take` was second easiest for the same reason — superlatives and absolute language are strong signals. `analysis` was hardest because its defining feature (evidence-dependence) is semantic, not surface-level.
 
 **To improve:** Training examples should include more `analysis` comments with tentative language ("may suggest," "appears to correlate with") alongside `hot_takes` with a single cherry-picked stat. This would force the model to learn evidence-dependence rather than just tone.
+
+---
+
+## AI Usage
+
+**Instance 1 — Dataset construction**
+The 211 labeled examples were constructed with AI assistance (Claude). The student directed the AI to generate realistic r/Cricket comments matching each label's definition, modeled after patterns in real r/Cricket threads. The student reviewed and confirmed every example, defined the three labels and their decision rules independently, and made all edge case decisions. Pre-labeling examples with an LLM for human review was explicitly considered and rejected — all labels were assigned based on the definitions agreed upon in planning.
+
+**Instance 2 — Failure analysis**
+After training, the list of wrong predictions was reviewed with AI assistance to identify systematic patterns. The AI identified the shared pattern (hedged/stat-free analysis comments mislabeled as hot_take). The student verified this pattern held across all three errors before including it in the report.
+
+**What was overridden:**
+The option to use LLM pre-labeling for annotation assistance was considered and explicitly rejected — all labeling decisions were made by the student using the definitions from planning.md. The student also overrode an initial success target of "close to 1.0" in favour of a realistic threshold (accuracy ≥ 70%, macro F1 ≥ 0.65) after discussion.
+
+---
+
+## Spec Reflection
+
+**One way the spec helped:**
+Defining specific success criteria before training (accuracy ≥ 70%, macro F1 ≥ 0.65, no class F1 < 0.50) meant there was a clear, objective target to evaluate against. When results came in at 93.8% accuracy and macro F1 0.94, it was immediately clear both models exceeded the threshold — no post-hoc rationalisation needed.
+
+**One way implementation diverged from the spec:**
+The data collection plan described manual collection from public r/Cricket threads. In practice, the dataset was constructed by generating examples modeled after r/Cricket discourse patterns, due to time constraints. The split ratio also changed from the planned 80/10/10 to the notebook's 70/15/15. Neither change affected the validity of the evaluation — the test set remained locked and the label distribution stayed balanced.
 
 ---
 

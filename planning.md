@@ -10,6 +10,16 @@
 
 ## 1. Problem statement
 
+**Community: r/Cricket — and why it's a good fit**
+r/Cricket is a large, active subreddit with genuinely varied discourse. Three meaningfully
+different types of comments coexist in every major thread: stat-backed tactical arguments,
+bold unsupported opinions, and live emotional reactions. These three types are easy to
+distinguish at the extremes but genuinely hard to separate at the boundary — which makes
+the task interesting for a classifier. The community is also text-heavy (not image-driven),
+public, and consistent enough in vocabulary that patterns are learnable. A classifier that
+works here could surface high-quality analytical content from the noise of reactions and
+hot takes at scale.
+
 **What is being classified?**
 Each example is a comment from r/Cricket. The model predicts whether the comment is an
 `analysis` (structured argument backed by specific statistics or historical evidence),
